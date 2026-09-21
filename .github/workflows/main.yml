@@ -1,1 +1,32 @@
 
+name: Build Android AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Extract Bolt project
+        run: |
+          mkdir project
+          unzip -q "Daily Rewards App - Bolt.new (4)" -d project
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Find Android project
+        run: |
+          ANDROID_DIR=$(find "$GITHUB_WORKSPACE/project" -type f -name gradlew -print -quit | xargs -r dirname)
+          echo "ANDROID_DIR=$ANDROID_DIR" >> $G
