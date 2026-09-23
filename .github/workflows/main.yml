@@ -9,16 +9,26 @@ name: Build Android AAB
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Extract Bolt project
+      - name: Inspect and extract Bolt project
         run: |
+          set -euxo pipefail
+          ARCHIVE="Daily Rewards App - Bolt.new (4)"
+          ls -lah "$ARCHIVE"
+          file "$ARCHIVE" || true
+          xxd -l 32 "$ARCHIVE" || true
           mkdir -p project
-          unzip -q "Daily Rewards App - Bolt.new (4)" -d project
-          echo "Extracted project:"
+          if unzip -tq "$ARCHIVE" >/dev/null 2>&1; then
+            unzip -q "$ARCHIVE" -d project
+          elif tar -tf "$ARCHIVE" >/dev/null 2>&1; then
+            tar -xf "$ARCHIVE" -C project
+          else
+            echo "Uploaded Bolt file is not a ZIP/TAR archive."
+            exit 1
+          fi
           find project -maxdepth 3 -type f | head -100
 
       - name: Setup Java 17
@@ -44,11 +54,9 @@ jobs:
           ANDROID_DIR=$(find "$GITHUB_WORKSPACE/project" -type f -name gradlew -print -quit | xargs -r dirname)
           if [ -z "$ANDROID_DIR" ]; then
             echo "gradlew not found"
-            find "$GITHUB_WORKSPACE/project" -maxdepth 5 -type f | sort | head -300
             exit 1
           fi
           echo "ANDROID_DIR=$ANDROID_DIR" >> "$GITHUB_ENV"
-          echo "Android project: $ANDROID_DIR"
 
       - name: Build signed release AAB
         working-directory: ${{ env.ANDROID_DIR }}
