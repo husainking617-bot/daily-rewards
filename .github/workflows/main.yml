@@ -28,27 +28,23 @@ jobs:
           cd project
           npm init -y
           npm install @capacitor/core@7 @capacitor/android@7
-          npm install -D @capacitor/cli@7 typescript
+          npm install -D @capacitor/cli@7
           mkdir -p www
           cat > www/index.html <<'EOF'
           <!doctype html>
           <html><head><meta charset="UTF-8"><title>Daily Rewards</title></head>
           <body><p>Loading Daily Rewards...</p></body></html>
           EOF
-          cat > capacitor.config.ts <<'EOF'
-          import type { CapacitorConfig } from '@capacitor/cli';
-
-          const config: CapacitorConfig = {
-            appId: 'com.dailyrewards.app',
-            appName: 'Daily Rewards',
-            webDir: 'www',
-            server: {
-              url: 'https://daily-rewards-app-y45t.bolt.host',
-              cleartext: false
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.dailyrewards.app",
+            "appName": "Daily Rewards",
+            "webDir": "www",
+            "server": {
+              "url": "https://daily-rewards-app-y45t.bolt.host",
+              "cleartext": false
             }
-          };
-
-          export default config;
+          }
           EOF
           npx cap add android
           npx cap sync android
