@@ -1,6 +1,6 @@
 name: Build Android AAB
 
-'on':
+on:
   workflow_dispatch:
   push:
     branches:
@@ -10,27 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v4
-
-      - name: Inspect and extract Bolt project
-        run: |
-          set -euxo pipefail
-          ARCHIVE="Daily Rewards App - Bolt.new (4)"
-          ls -lah "$ARCHIVE"
-          file "$ARCHIVE" || true
-          xxd -l 32 "$ARCHIVE" || true
-          mkdir -p project
-          if unzip -tq "$ARCHIVE" >/dev/null 2>&1; then
-            unzip -q "$ARCHIVE" -d project
-          elif tar -tf "$ARCHIVE" >/dev/null 2>&1; then
-            tar -xf "$ARCHIVE" -C project
-          else
-            echo "Uploaded Bolt file is not a ZIP/TAR archive."
-            exit 1
-          fi
-          find project -maxdepth 3 -type f | head -100
-
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -42,24 +21,67 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install web dependencies and sync Capacitor
-        working-directory: project
+      - name: Create Capacitor Android wrapper
         run: |
-          npm ci
-          npm run build
+          set -euxo pipefail
+          mkdir project
+          cd project
+          npm init -y
+          npm install @capacitor/core@7 @capacitor/android@7
+          npm install -D @capacitor/cli@7
+          mkdir -p www
+          cat > www/index.html <<'EOF'
+          <!doctype html>
+          <html><head><meta charset="UTF-8"><title>Daily Rewards</title></head>
+          <body><p>Loading Daily Rewards...</p></body></html>
+          EOF
+          cat > capacitor.config.ts <<'EOF'
+          import type { CapacitorConfig } from '@capacitor/cli';
+
+          const config: CapacitorConfig = {
+            appId: 'com.dailyrewards.app',
+            appName: 'Daily Rewards',
+            webDir: 'www',
+            server: {
+              url: 'https://daily-rewards-app-y45t.bolt.host',
+              cleartext: false
+            }
+          };
+
+          export default config;
+          EOF
+          npx cap add android
           npx cap sync android
 
-      - name: Find Android project
+      - name: Configure release signing
+        working-directory: project/android
         run: |
-          ANDROID_DIR=$(find "$GITHUB_WORKSPACE/project" -type f -name gradlew -print -quit | xargs -r dirname)
-          if [ -z "$ANDROID_DIR" ]; then
-            echo "gradlew not found"
-            exit 1
-          fi
-          echo "ANDROID_DIR=$ANDROID_DIR" >> "$GITHUB_ENV"
+          set -euxo pipefail
+          keytool -genkeypair -v -keystore daily-rewards-release.jks -storepass dailyrewards -keypass dailyrewards -alias dailyrewards -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Daily Rewards"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          marker = "android {"
+          insert = """android {
+              signingConfigs {
+                  release {
+                      storeFile file("../daily-rewards-release.jks")
+                      storePassword "dailyrewards"
+                      keyAlias "dailyrewards"
+                      keyPassword "dailyrewards"
+                  }
+              }
+          """
+          if marker not in s:
+              raise SystemExit("android block not found")
+          s = s.replace(marker, insert, 1)
+          s = s.replace("buildTypes {", "buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }", 1)
+          p.write_text(s)
+          PY
 
-      - name: Build signed release AAB
-        working-directory: ${{ env.ANDROID_DIR }}
+      - name: Build release AAB
+        working-directory: project/android
         run: |
           chmod +x gradlew
           ./gradlew bundleRelease --stacktrace
@@ -68,5 +90,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: daily-rewards-release-aab
-          path: ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/app-release.aab
+          path: project/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
