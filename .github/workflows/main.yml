@@ -52,6 +52,8 @@ jobs:
           EOF
           npx cap add android
           npx cap sync android
+          mkdir -p android/app/src/main/assets
+          cp $GITHUB_WORKSPACE/admob-bridge.js android/app/src/main/assets/admob-bridge.js
 
       - name: Configure AdMob
         working-directory: project/android
