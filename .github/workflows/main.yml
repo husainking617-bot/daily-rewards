@@ -54,6 +54,8 @@ jobs:
           npx cap sync android
           mkdir -p android/app/src/main/assets
           cp $GITHUB_WORKSPACE/admob-bridge.js android/app/src/main/assets/admob-bridge.js
+          mkdir -p android/app/src/main/java/com/dailyrewards/app
+          cp $GITHUB_WORKSPACE/MainActivity.java android/app/src/main/java/com/dailyrewards/app/MainActivity.java
 
       - name: Configure AdMob
         working-directory: project/android
