@@ -31,6 +31,7 @@ jobs:
           cd project
           npm init -y
           npm install @capacitor/core@7 @capacitor/android@7
+          npm install @capacitor-community/admob@7.0.3
           npm install -D @capacitor/cli@7
           mkdir -p www
           cat > www/index.html <<'EOF'
