@@ -1,57 +1,56 @@
 (() => {
   const install = () => {
-    if (!window.Capacitor || !window.Capacitor.registerPlugin) {
-      setTimeout(install, 1000);
+    if (window.__dailyRewardsNativeAdBridge) return;
+    if (!window.DailyRewardsAd || !window.DailyRewardsAd.showRewarded) {
+      setTimeout(install, 500);
       return;
     }
 
-    if (window.__dailyRewardsAdMobBridge) return;
-    const AdMob = window.Capacitor.registerPlugin('AdMob');
-    if (!AdMob) {
-      setTimeout(install, 1000);
-      return;
-    }
-
-    window.__dailyRewardsAdMobBridge = true;
+    window.__dailyRewardsNativeAdBridge = true;
     let busy = false;
+    let pendingButton = null;
 
-    async function showRewarded(button) {
-      if (busy) return;
-      busy = true;
-      try {
-        await AdMob.initialize();
+    window.__dailyRewardsAdRewarded = () => {
+      const button = pendingButton;
+      pendingButton = null;
+      busy = false;
 
-        // Development/test build: Google's guaranteed rewarded test ad.
-        await AdMob.prepareRewardVideoAd({
-          adId: 'ca-app-pub-3940256099942544/5224354917',
-          isTesting: true
-        });
+      if (!button) return;
+      button.setAttribute('data-dr-ad-allowed', '1');
+      button.click();
+    };
 
-        await AdMob.showRewardVideoAd();
-
-        button.setAttribute('data-dr-ad-allowed', '1');
-        button.click();
-      } catch (error) {
-        console.error('Daily Rewards AdMob error', error);
-      } finally {
-        busy = false;
-      }
-    }
+    window.__dailyRewardsAdFailed = (message) => {
+      pendingButton = null;
+      busy = false;
+      console.error('Daily Rewards AdMob error:', message);
+    };
 
     document.addEventListener('click', (event) => {
       let node = event.target;
+
       while (node && node !== document.body) {
-        const text = (node.innerText || node.textContent || '').replace(/\s+/g, ' ').trim();
+        const text = (node.innerText || node.textContent || '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
         if (text.includes('Watch & Earn')) {
           if (node.getAttribute('data-dr-ad-allowed') === '1') {
             node.removeAttribute('data-dr-ad-allowed');
             return;
           }
+
           event.preventDefault();
           event.stopImmediatePropagation();
-          showRewarded(node);
+
+          if (busy) return;
+
+          busy = true;
+          pendingButton = node;
+          window.DailyRewardsAd.showRewarded();
           return;
         }
+
         node = node.parentElement;
       }
     }, true);
