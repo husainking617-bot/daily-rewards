@@ -53,6 +53,23 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Configure AdMob
+        working-directory: project/android
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          m = Path("app/src/main/AndroidManifest.xml")
+          s = m.read_text()
+          if "com.google.android.gms.ads.APPLICATION_ID" not in s:
+              s = s.replace("</application>", '    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="@string/admob_app_id" />\n    </application>')
+          m.write_text(s)
+          v = Path("app/src/main/res/values/strings.xml")
+          s = v.read_text()
+          if "admob_app_id" not in s:
+              s = s.replace("</resources>", '    <string name="admob_app_id">ca-app-pub-8752731937658252~8914132798</string>\n</resources>')
+          v.write_text(s)
+          PY
+
       - name: Configure release signing
         working-directory: project/android
         run: |
