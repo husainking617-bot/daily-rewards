@@ -1,30 +1,12 @@
 package com.husainking.project2;
-
-import android.app.Activity;
-import android.os.Bundle;
-import android.content.Intent;
-import android.net.Uri;
-import android.graphics.Color;
-import android.view.ViewGroup;
-import android.widget.*;
-
-public class MainActivity extends Activity {
-  private void open(String url){ startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
-  private Button btn(String text){ Button b=new Button(this); b.setText(text); b.setTextSize(16); b.setAllCaps(false); b.setOnClickListener(v->{ switch(text){
-    case "📍 Google Find Hub": open("https://android.com/find"); break;
-    case "🔐 Google Account Recovery": open("https://accounts.google.com/signin/recovery"); break;
-    case "📵 CEIR: Block Lost/Stolen Phone": open("https://ceir.sancharsaathi.gov.in/Request/CeirUserBlockRequestDirect.jsp"); break;
-    case "🔎 CEIR: Check IMEI": open("https://ceir.sancharsaathi.gov.in/Device/CeirImeiVerification.jsp"); break;
-    case "📋 CEIR Request Status": open("https://ceir.sancharsaathi.gov.in/Request/CeirRequestStatus.jsp"); break;
-    case "📖 CEIR Help": open("https://ceir.sancharsaathi.gov.in/Home/help.jsp"); break;
-  }}); return b; }
-  @Override public void onCreate(Bundle x){ super.onCreate(x);
-    LinearLayout root=new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(32,28,32,24); root.setBackgroundColor(Color.WHITE);
-    TextView title=new TextView(this); title.setText("📱 Phone Recovery Helper"); title.setTextSize(26); title.setTextColor(Color.rgb(20,20,20)); title.setPadding(0,0,0,12); root.addView(title);
-    TextView info=new TextView(this); info.setText("Lost/stolen Android phone ke liye official recovery tools.\n\n⚠️ Sirf Gmail ID se kisi ki live location ya password nahi nikala ja sakta. Find Hub tabhi location dikha sakta hai jab Google account/device ki required access available ho."); info.setTextSize(16); info.setTextColor(Color.DKGRAY); info.setPadding(0,0,0,16); root.addView(info);
-    String[] bs={"📍 Google Find Hub","🔐 Google Account Recovery","📵 CEIR: Block Lost/Stolen Phone","🔎 CEIR: Check IMEI","📋 CEIR Request Status","📖 CEIR Help"};
-    for(String s:bs){ Button b=btn(s); root.addView(b,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT)); }
-    TextView note=new TextView(this); note.setText("\nTip: CEIR ke liye police complaint/FIR, re-issued SIM aur IMEI jaise details ki zaroorat ho sakti hai."); note.setTextSize(14); note.setTextColor(Color.GRAY); root.addView(note);
-    setContentView(root);
-  }
+import android.app.*;import android.os.*;import android.content.*;import android.net.*;import android.graphics.Color;import android.view.*;import android.widget.*;
+public class MainActivity extends Activity{
+ LinearLayout root; EditText email,phone,imei;
+ String find="https://android.com/find",recover="https://accounts.google.com/signin/recovery",ceir="https://ceir.sancharsaathi.gov.in/Request/CeirUserBlockRequestDirect.jsp",status="https://ceir.sancharsaathi.gov.in/Request/CeirRequestStatus.jsp",verify="https://ceir.sancharsaathi.gov.in/Device/CeirImeiVerification.jsp";
+ public void onCreate(Bundle b){super.onCreate(b);showStart();}
+ TextView t(String s,int z){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(Color.DKGRAY);v.setPadding(0,8,0,12);return v;}
+ Button btn(String s,String u){Button x=new Button(this);x.setText(s);x.setAllCaps(false);x.setTextSize(16);x.setOnClickListener(v->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(u))));return x;}
+ void base(){root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(28,28,28,24);ScrollView sc=new ScrollView(this);sc.addView(root);setContentView(sc);}
+ void showStart(){base();root.addView(t("📱 Project 2 — Phone Recovery",27));root.addView(t("Gmail/number ko recovery checklist ke liye use karo. App password, OTP ya hidden live location nahi nikalti.",16));email=new EditText(this);email.setHint("Gmail ID");email.setInputType(33);root.addView(email);phone=new EditText(this);phone.setHint("Lost phone number");phone.setInputType(3);root.addView(phone);imei=new EditText(this);imei.setHint("IMEI (agar available ho)");imei.setInputType(3);root.addView(imei);Button go=new Button(this);go.setText("Start Recovery Check");go.setOnClickListener(v->showSteps());root.addView(go);}
+ void showSteps(){base();root.addView(t("Recovery checks",25));root.addView(t("1) Google Find Hub — account se sign in karke device list check karo.",16));root.addView(btn("📍 Open Google Find Hub",find));root.addView(t("2) Password/recovery problem ho to official Google recovery flow use karo.",16));root.addView(btn("🔐 Google Account Recovery",recover));root.addView(t("3) IMEI available hai to CEIR verification check karo.",16));root.addView(btn("🔎 CEIR IMEI Verification",verify));root.addView(t("4) Lost/stolen phone ke liye CEIR blocking request. Police report/FIR, re-issued SIM, ID proof aur IMEI jaise details required ho sakti hain.",16));root.addView(btn("📵 CEIR Lost/Stolen Request",ceir));root.addView(t("5) Existing CEIR request ka status Request ID/complaint number se check karo.",16));root.addView(btn("📋 CEIR Request Status",status));root.addView(t("Final checklist\n☐ Find Hub device check\n☐ Google recovery try\n☐ Duplicate SIM active\n☐ Police complaint/FIR\n☐ IMEI available\n☐ CEIR status checked",16));Button back=new Button(this);back.setText("← Edit details");back.setOnClickListener(v->showStart());root.addView(back);}
 }
