@@ -9,6 +9,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.*;
 
@@ -43,8 +44,16 @@ public class MainActivity extends Activity {
         root.addView(locate);
 
         Button findHub = new Button(this);
-        findHub.setText("Open Google Find Hub");
+        findHub.setText("Find Phone via Google Find Hub");
         root.addView(findHub);
+
+        Button recovery = new Button(this);
+        recovery.setText("Google Account Recovery");
+        root.addView(recovery);
+
+        Button ceir = new Button(this);
+        ceir.setText("Open CEIR (Block/Trace IMEI)");
+        root.addView(ceir);
 
         result = new TextView(this);
         result.setTextSize(16);
@@ -52,10 +61,9 @@ public class MainActivity extends Activity {
         root.addView(result);
 
         locate.setOnClickListener(v -> locateOwnDevice());
-        findHub.setOnClickListener(v -> {
-            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://android.com/find"));
-            startActivity(i);
-        });
+        findHub.setOnClickListener(v -> openFindHub());
+        recovery.setOnClickListener(v -> openRecovery());
+        ceir.setOnClickListener(v -> openUrl("https://ceir.sancharsaathi.gov.in/"));
         setContentView(root);
     }
 
@@ -65,6 +73,26 @@ public class MainActivity extends Activity {
         e.setSingleLine(true);
         e.setPadding(0,12,0,12);
         return e;
+    }
+
+    void openFindHub() {
+        String account = email.getText().toString().trim();
+        result.setText(TextUtils.isEmpty(account)
+                ? "Google Find Hub khul raha hai. Apne lost phone wale Google account se sign in karein."
+                : "Find Hub khul raha hai. " + account + " wale account se sign in karein.");
+        openUrl("https://android.com/find");
+    }
+
+    void openRecovery() {
+        openUrl("https://accounts.google.com/signin/recovery");
+    }
+
+    void openUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            result.setText("Browser open nahi ho paya. Internet/browser check karein.");
+        }
     }
 
     void locateOwnDevice() {
