@@ -64,12 +64,12 @@ jobs:
           from pathlib import Path
           p = Path("app/build.gradle")
           s = p.read_text()
-          dep = '    implementation "com.google.android.gms:play-services-ads:24.7.0"\\n'
+          dep = '    implementation "com.google.android.gms:play-services-ads:24.7.0"\n'
           if "play-services-ads" not in s:
               if "dependencies {" in s:
-                  s = s.replace("dependencies {", "dependencies {\\n" + dep, 1)
+                  s = s.replace("dependencies {", "dependencies {\n" + dep, 1)
               else:
-                  s += "\\ndependencies {\\n" + dep + "}\\n"
+                  s += "\ndependencies {\n" + dep + "}\n"
           p.write_text(s)
           PY
 
@@ -113,7 +113,8 @@ jobs:
           if marker not in s:
               raise SystemExit("android block not found")
           s = s.replace(marker, insert, 1)
-          s = s.replace("buildTypes {", "buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }", 1)
+          if "signingConfig signingConfigs.release" not in s:
+              s = s.replace("buildTypes {", "buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }", 1)
           p.write_text(s)
           PY
 
