@@ -43,11 +43,7 @@ jobs:
           {
             "appId": "com.dailyrewards.app",
             "appName": "Daily Rewards",
-            "webDir": "www",
-            "server": {
-              "url": "https://daily-rewards-app-y45t.bolt.host",
-              "cleartext": false
-            }
+            "webDir": "www"
           }
           EOF
           npx cap add android
