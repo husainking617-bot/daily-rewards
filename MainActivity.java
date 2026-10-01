@@ -124,11 +124,37 @@ public class MainActivity extends BridgeActivity {
     private void scheduleAdBridgeInjection() {
         handler.postDelayed(() -> {
             injectAdBridge();
+            injectGameHome();
             attempts++;
             if (attempts < 30) {
                 scheduleAdBridgeInjection();
             }
         }, 1000);
+    }
+
+    private void injectGameHome() {
+        if (getBridge() == null || getBridge().getWebView() == null) return;
+        getBridge().getWebView().post(() -> {
+            String html = "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'><style>" +
+                    "body{margin:0;background:#0b1020;color:#fff;font-family:Arial,sans-serif}" +
+                    ".wrap{padding:22px 16px 90px}.brand{font-size:30px;font-weight:800}.sub{opacity:.7;margin:4px 0 18px}" +
+                    ".balance{background:#171f38;border-radius:18px;padding:18px;margin-bottom:18px}.points{font-size:28px;font-weight:800}" +
+                    ".grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{border:0;border-radius:18px;padding:20px 12px;text-align:left;color:#fff;background:#202a48;font-size:18px;font-weight:700}.emoji{font-size:34px;display:block;margin-bottom:12px}.wide{grid-column:1/3}.nav{position:fixed;bottom:0;left:0;right:0;background:#12182b;padding:12px;display:flex;gap:8px}.nav button{flex:1;border:0;border-radius:12px;padding:12px;background:#273150;color:#fff;font-weight:700}.watch{background:#283d68}.msg{margin-top:16px;opacity:.75;font-size:13px}" +
+                    "</style></head><body><div class='wrap'><div class='brand'>Reward Arena</div><div class='sub'>Play. Earn Rewards. Enjoy.</div>" +
+                    "<div class='balance'><div>Rewards Balance</div><div class='points' id='pts'>225</div></div>" +
+                    "<div class='grid'><button class='card' onclick='game("Cricket")'><span class='emoji'>🏏</span>Cricket</button>" +
+                    "<button class='card' onclick='game("Football")'><span class='emoji'>⚽</span>Football</button>" +
+                    "<button class='card' onclick='game("Battle Royale")'><span class='emoji'>🔥</span>Battle Royale</button>" +
+                    "<button class='card' onclick='game("Battle Royale 2")'><span class='emoji'>🎮</span>Battle Royale 2</button>" +
+                    "<button class='card wide watch' onclick='watch()'><span class='emoji'>📺</span>Watch Ads & Earn</button></div>" +
+                    "<div class='msg' id='msg'>Games are being built in stages. Rewards and Watch Ads stay active.</div></div>" +
+                    "<div class='nav'><button onclick='home()'>Home</button><button onclick='withdraw()'>Withdraw</button><button onclick='historyPage()'>History</button></div>" +
+                    "<script>let p=225;function watch(){document.getElementById('msg').innerText='Ad starting...';window.__dailyRewardsAdRewarded=function(){p+=10;document.getElementById('pts').innerText=p;document.getElementById('msg').innerText='Reward added: +10';};window.__dailyRewardsAdFailed=function(m){document.getElementById('msg').innerText=m;};window.DailyRewardsAd&&DailyRewardsAd.showRewarded();}" +
+                    "function game(n){document.getElementById('msg').innerText=n+' mode selected. Full playable version is being added next.';}" +
+                    "function home(){location.reload()}function withdraw(){document.getElementById('msg').innerText='Withdraw section ready for the existing rewards balance.'}function historyPage(){document.getElementById('msg').innerText='Reward history will appear here.'}</script></body></html>";
+            String js = "document.open();document.write(" + org.json.JSONObject.quote(html) + ");document.close();";
+            getBridge().eval(js, null);
+        });
     }
 
     private void injectAdBridge() {
