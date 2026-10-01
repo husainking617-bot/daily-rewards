@@ -57,6 +57,22 @@ jobs:
           mkdir -p android/app/src/main/java/com/dailyrewards/app
           cp $GITHUB_WORKSPACE/MainActivity.java android/app/src/main/java/com/dailyrewards/app/MainActivity.java
 
+      - name: Add Google Mobile Ads dependency
+        working-directory: project/android
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          dep = '    implementation "com.google.android.gms:play-services-ads:24.7.0"\\n'
+          if "play-services-ads" not in s:
+              if "dependencies {" in s:
+                  s = s.replace("dependencies {", "dependencies {\\n" + dep, 1)
+              else:
+                  s += "\\ndependencies {\\n" + dep + "}\\n"
+          p.write_text(s)
+          PY
+
       - name: Configure AdMob
         working-directory: project/android
         run: |
