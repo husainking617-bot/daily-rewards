@@ -1,0 +1,4 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.husainking.project3'; compileSdk 35
+ defaultConfig { applicationId 'com.husainking.project3'; minSdk 26; targetSdk 35; versionCode 1; versionName '1.0' }
+}
