@@ -1,0 +1,10 @@
+<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>HK Phone Manager</title>
+<style>body{font-family:Arial,sans-serif;background:#0b1020;color:#fff;margin:0;padding:24px} .card{max-width:520px;margin:auto;background:#151c33;border-radius:20px;padding:24px;box-shadow:0 10px 30px #0005}input,button{width:100%;padding:14px;margin-top:12px;border-radius:12px;border:0;box-sizing:border-box}button{background:#4f7cff;color:white;font-weight:700} .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.item{background:#202946;padding:16px;border-radius:14px}.muted{color:#aab3cc;font-size:13px}</style>
+</head><body><div class="card"><h1>HK Phone Manager</h1><p class="muted">Authorized device management</p>
+<input id="email" type="email" placeholder="Second phone Gmail ID">
+<button onclick="request()">Send authorization request</button>
+<div id="status" class="muted"></div>
+<div class="grid"><div class="item">📍 Location<br><b>Waiting for authorization</b></div><div class="item">🔋 Battery<br><b>Waiting</b></div><div class="item">📶 Network<br><b>Waiting</b></div><div class="item">🔒 Device<br><b>Not paired</b></div></div>
+<p class="muted">Note: this website is the Project 3 interface. Android system permissions still require Android's own approval flow.</p>
+</div><script>function request(){const e=document.getElementById('email').value.trim();document.getElementById('status').textContent=e?'Authorization request prepared for '+e+'. A real Gmail/Google authorization backend is not connected yet.':'Enter the Gmail ID first.'}</script></body></html>
