@@ -21,3 +21,4 @@ jobs:
         with:
           name: Project3-HK-Phone-Manager-debug
           path: project3/app/build/outputs/apk/debug/app-debug.apk
+# Rebuild requested 2026-10-03
