@@ -16,56 +16,165 @@ import java.util.Locale;
 import java.util.Random;
 
 public class MainActivity extends Activity {
-    DevicePolicyManager dpm; ComponentName admin; EditText email; TextView status, codeView;
-    static final int REQ_LOC=20, REQ_NOTIF=21, REQ_CAPTURE=22;
+    DevicePolicyManager dpm; ComponentName admin; EditText email; TextView status, codeView, permStatus;
+    static final int REQ_STANDARD=20, REQ_NOTIF=21;
 
     @Override public void onCreate(Bundle b){
         super.onCreate(b);
         dpm=(DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
         admin=new ComponentName(this,AdminReceiver.class);
-        buildUi();
+        showHome();
     }
 
-    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setPadding(0,12,0,12); return t; }
+    TextView tv(String s,int size){ TextView t=new TextView(this); t.setText(s); t.setTextSize(size); t.setPadding(0,10,0,10); return t; }
     Button btn(String s){ Button b=new Button(this); b.setText(s); b.setAllCaps(false); return b; }
 
-    void buildUi(){
-        ScrollView sc=new ScrollView(this);
-        LinearLayout l=new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setPadding(32,40,32,32);
+    void base(LinearLayout l){
+        l.setOrientation(LinearLayout.VERTICAL); l.setPadding(28,34,28,28);
         l.addView(tv("H.K Phone Manager",28));
         l.addView(tv("PROJECT 3 • Authorized second-phone management",15));
-        l.addView(tv("Target phone par ye app install karo. Owner Gmail aur permissions target phone ke owner ko khud approve karni hongi.",15));
+    }
 
-        email=new EditText(this); email.setHint("Owner Gmail (example@gmail.com)"); email.setInputType(33); l.addView(email);
-        Button save=btn("Save Owner Gmail"); save.setOnClickListener(v->{getPreferences(0).edit().putString("owner_email",email.getText().toString().trim()).apply(); toast("Owner Gmail saved");}); l.addView(save);
+    void showHome(){
+        ScrollView sc=new ScrollView(this);
+        LinearLayout l=new LinearLayout(this); base(l);
+        l.addView(tv("Target phone ko is app se pair karke uska authorized dashboard yahan dikhaya jayega.",16));
 
-        codeView=tv("Pairing code: "+pairCode(),20); l.addView(codeView);
-        Button newCode=btn("Generate New Pairing Code"); newCode.setOnClickListener(v->{String c=pairCode(); getPreferences(0).edit().putString("pair_code",c).apply(); codeView.setText("Pairing code: "+c);}); l.addView(newCode);
+        email=new EditText(this);
+        email.setHint("Dusre phone ki Owner Gmail ID");
+        email.setInputType(33);
+        String saved=getPreferences(0).getString("owner_email","");
+        email.setText(saved);
+        l.addView(email);
 
-        status=tv(statusText(),15); l.addView(status);
+        Button pair=btn("Pair / Add Second Phone");
+        pair.setOnClickListener(v->{ saveEmail(); showController(); });
+        l.addView(pair);
 
-        Button adminBtn=btn("1. Enable Device Management"); adminBtn.setOnClickListener(v->enableAdmin()); l.addView(adminBtn);
-        Button loc=btn("2. Allow Location"); loc.setOnClickListener(v->requestLocation()); l.addView(loc);
-        Button acc=btn("3. Allow Accessibility (for authorized remote-control features)"); acc.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))); l.addView(acc);
-        Button notif=btn("4. Allow Notifications"); notif.setOnClickListener(v->{if(Build.VERSION.SDK_INT>=33) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF);}); l.addView(notif);
-        Button screen=btn("5. Allow Screen Sharing when requested"); screen.setOnClickListener(v->{ Intent i=new Intent(Settings.ACTION_SETTINGS); startActivity(i); toast("Screen sharing is a protected Android permission and must be approved on this phone.");}); l.addView(screen);
+        Button setup=btn("Dusre phone par Permission Setup");
+        setup.setOnClickListener(v->showPermissionWizard());
+        l.addView(setup);
 
-        Button request=btn("Send Permission Request to Owner Gmail"); request.setOnClickListener(v->sendApprovalMail()); l.addView(request);
+        l.addView(tv("Security: Gmail password kabhi enter/store nahi hoga. Pairing ke liye target phone owner ki explicit approval zaroori hai.",14));
+        sc.addView(l); setContentView(sc);
+    }
 
-        Button lock=btn("Test: Lock This Device"); lock.setOnClickListener(v->{if(dpm.isAdminActive(admin)) dpm.lockNow(); else toast("Enable Device Management first");}); l.addView(lock);
-        Button ring=btn("Test: Ring This Device"); ring.setOnClickListener(v->{((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).setStreamVolume(android.media.AudioManager.STREAM_RING, ((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamMaxVolume(android.media.AudioManager.STREAM_RING),0); ((android.os.Vibrator)getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createWaveform(new long[]{0,500,500,500,500,500},-1));}); l.addView(ring);
+    void showController(){
+        saveEmail();
+        ScrollView sc=new ScrollView(this);
+        LinearLayout l=new LinearLayout(this); base(l);
+        l.addView(tv("SECOND PHONE — Controller Dashboard",22));
+        l.addView(tv("Owner: "+getPreferences(0).getString("owner_email","")+
+                "\nPairing code: "+pairCode()+"\nConnection: Waiting for authorized target device",14));
 
-        Button location=btn("Show Current Location (on this phone)"); location.setOnClickListener(v->showLocation()); l.addView(location);
-        l.addView(tv("Important: Gmail alone cannot deliver Android permission prompts. Real cross-device remote commands need an authenticated internet relay/backend. This app never bypasses Android permissions; the target phone must explicitly approve Device Admin, Location, Accessibility and Screen Capture.",14));
+        Button connect=btn("Connect / Refresh Device");
+        connect.setOnClickListener(v->toast("Secure backend/pairing connection abhi configure karna baaki hai."));
+        l.addView(connect);
+
+        l.addView(tv("DEVICE STATUS",18));
+        l.addView(btn("📍 Location — Waiting for target connection"));
+        l.addView(btn("🔋 Battery — Waiting for target connection"));
+        l.addView(btn("📶 Network — Waiting for target connection"));
+        l.addView(btn("📱 Device Info — Waiting for target connection"));
+
+        l.addView(tv("AUTHORIZED ACTIONS",18));
+        Button ring=btn("🔔 Ring Second Phone");
+        ring.setOnClickListener(v->toast("Target device connection required."));
+        l.addView(ring);
+        Button lock=btn("🔒 Lock Second Phone");
+        lock.setOnClickListener(v->toast("Target device connection + Device Admin authorization required."));
+        l.addView(lock);
+        Button screen=btn("📱 View / Control Screen");
+        screen.setOnClickListener(v->toast("Target phone must explicitly approve Screen Capture and Accessibility first."));
+        l.addView(screen);
+
+        Button wizard=btn("⚙️ Open Target Permission Setup");
+        wizard.setOnClickListener(v->showPermissionWizard());
+        l.addView(wizard);
+
+        Button back=btn("← Back");
+        back.setOnClickListener(v->showHome());
+        l.addView(back);
 
         sc.addView(l); setContentView(sc);
     }
 
-    String pairCode(){ String c=getPreferences(0).getString("pair_code",null); if(c==null){c=String.format(Locale.US,"%06d",new Random().nextInt(1000000)); getPreferences(0).edit().putString("pair_code",c).apply();} return c; }
-    String statusText(){return "Device ID: "+Build.MANUFACTURER+" "+Build.MODEL+"\nAndroid: "+Build.VERSION.RELEASE+"\nAdmin: "+(dpm.isAdminActive(admin)?"ENABLED":"OFF");}
-    void enableAdmin(){startActivity(new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,admin).putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,"Only enable this on your own device. It allows authorized device-management actions such as remote lock once a secure controller is connected."));}
-    void requestLocation(){ if(Build.VERSION.SDK_INT>=23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},REQ_LOC); }
-    void showLocation(){ LocationManager lm=(LocationManager)getSystemService(LOCATION_SERVICE); try{ Location x=lm.getLastKnownLocation(LocationManager.GPS_PROVIDER); if(x==null)x=lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER); toast(x==null?"No recent location available":String.format(Locale.US,"Lat %.6f, Lon %.6f",x.getLatitude(),x.getLongitude())); }catch(Exception e){toast("Location permission required");}}
-    void sendApprovalMail(){ String to=email.getText().toString().trim(); if(to.isEmpty()) to=getPreferences(0).getString("owner_email",""); if(to.isEmpty()){toast("Owner Gmail enter karo"); return;} String body="H.K Phone Manager\nDevice: "+Build.MANUFACTURER+" "+Build.MODEL+"\nPairing code: "+pairCode()+"\nThis request is for an owner-authorized second phone. Please approve only if you own/control this device."; Intent i=new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"+Uri.encode(to))); i.putExtra(Intent.EXTRA_SUBJECT,"H.K Phone Manager — Permission Request"); i.putExtra(Intent.EXTRA_TEXT,body); try{startActivity(i);}catch(Exception e){toast("Gmail app available nahi hai");}}
+    void showPermissionWizard(){
+        ScrollView sc=new ScrollView(this);
+        LinearLayout l=new LinearLayout(this); base(l);
+        l.addView(tv("TARGET PHONE — ONE SETUP SCREEN",22));
+        l.addView(tv("Neeche se sab permissions isi setup screen se start hongi. Android protected permissions ko ek single automatic grant mein combine nahi karta; owner ko har protected prompt/settings screen par khud approve karna hota hai.",14));
+
+        permStatus=tv(permissionSummary(),15); l.addView(permStatus);
+
+        Button standard=btn("1️⃣ Allow Location + basic permissions");
+        standard.setOnClickListener(v->requestStandard());
+        l.addView(standard);
+
+        Button background=btn("2️⃣ Allow Background Location");
+        background.setOnClickListener(v->{
+            if(Build.VERSION.SDK_INT>=30) startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+            else requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},30);
+        });
+        l.addView(background);
+
+        Button adminBtn=btn("3️⃣ Enable Device Management");
+        adminBtn.setOnClickListener(v->enableAdmin()); l.addView(adminBtn);
+
+        Button acc=btn("4️⃣ Enable Accessibility (remote-control authorization)");
+        acc.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))); l.addView(acc);
+
+        Button notif=btn("5️⃣ Allow Notifications");
+        notif.setOnClickListener(v->{if(Build.VERSION.SDK_INT>=33) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},REQ_NOTIF); else toast("Notifications permission is not required on this Android version.");});
+        l.addView(notif);
+
+        Button mail=btn("6️⃣ Send Approval Request to Owner Gmail");
+        mail.setOnClickListener(v->sendApprovalMail()); l.addView(mail);
+
+        Button refresh=btn("↻ Refresh permission status");
+        refresh.setOnClickListener(v->permStatus.setText(permissionSummary())); l.addView(refresh);
+
+        Button back=btn("← Back to Controller");
+        back.setOnClickListener(v->showController()); l.addView(back);
+
+        sc.addView(l); setContentView(sc);
+    }
+
+    void saveEmail(){ String s=email==null?"":email.getText().toString().trim(); if(!s.isEmpty()) getPreferences(0).edit().putString("owner_email",s).apply(); }
+
+    String pairCode(){
+        String c=getPreferences(0).getString("pair_code",null);
+        if(c==null){ c=String.format(Locale.US,"%06d",new Random().nextInt(1000000)); getPreferences(0).edit().putString("pair_code",c).apply(); }
+        return c;
+    }
+
+    String permissionSummary(){
+        boolean loc=Build.VERSION.SDK_INT<23 || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED;
+        boolean notif=Build.VERSION.SDK_INT<33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED;
+        return "Location: "+(loc?"ON":"OFF")+"\nNotifications: "+(notif?"ON":"OFF")+"\nDevice Management: "+(dpm.isAdminActive(admin)?"ON":"OFF")+"\nAccessibility: check Android Settings\nScreen Capture: Android requires explicit approval when started.";
+    }
+
+    void requestStandard(){
+        if(Build.VERSION.SDK_INT>=23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},REQ_STANDARD);
+        else toast("Basic permissions already handled.");
+    }
+
+    void enableAdmin(){
+        Intent i=new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+        i.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN,admin);
+        i.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,"Enable only on your own second phone. This permits authorized device-management actions such as locking the device.");
+        startActivity(i);
+    }
+
+    void sendApprovalMail(){
+        String to=getPreferences(0).getString("owner_email","");
+        if(to.isEmpty()){toast("Pehle Owner Gmail ID enter karo."); return;}
+        String body="H.K Phone Manager\nPairing code: "+pairCode()+"\nDevice: "+Build.MANUFACTURER+" "+Build.MODEL+"\n\nPlease approve this request only if you own/control this device.";
+        Intent i=new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"+Uri.encode(to)));
+        i.putExtra(Intent.EXTRA_SUBJECT,"H.K Phone Manager — Permission Request");
+        i.putExtra(Intent.EXTRA_TEXT,body);
+        try{startActivity(i);}catch(Exception e){toast("Mail app available nahi hai.");}
+    }
+
     void toast(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
 }
